@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plague Doctor 2066 - Cyberpunk Medical Horror</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%),
+                linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 25%, #16213e 50%, #0f1419 100%);
+            color: #00ff41;
+            overflow-x: auto;
+            min-height: 100vh;
+            image-rendering: pixelated;
+            position: relative;
+        }
+        
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .game-container {
+            width: 100vw;
+            min-height: 100vh;
+            padding: 15px;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            gap: 15px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.9) 0%, rgba(128, 0, 128, 0.9) 100%);
+            border: 3px solid #ff0040;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 
+                0 0 30px rgba(255, 0, 64, 0.7),
+                inset 0 0 30px rgba(255, 0, 0, 0.2);
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff0040, #00ff41, #0040ff, #ff0040);
+            border-radius: 15px;
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes borderGlow {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .game-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2em, 5vw, 4em);
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 
+                0 0 10px #ff0040,
+                0 0 20px #ff0040,
+                0 0 30px #ff0040;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+        
+        .subtitle {
+            font-size: clamp(0.9em, 2vw, 1.2em);
+            color: #00ff41;
+            text-shadow: 0 0 10px #00ff41;
+            letter-spacing: 2px;
+        }
+        
+        .stats-hud {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 25px rgba(0, 255, 65, 0.4);
+        }
+        
+        .stat-display {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 255, 65, 0.05));
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.2), transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        @keyframes scanLine {
+            0% { left: -100%; }
+            50% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #00ff41;
+            text-shadow: 0 0 8px #00ff41;
+        }
+        
+        .main-gameplay {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr;
+            gap: 20px;
+            height: 100%;
+        }
+        
+        .patient-chamber, .control-center, .equipment-bay {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+        
+        .patient-chamber {
+            border-color: #ff6600;
+            box-shadow: 0 0 25px rgba(255, 102, 0, 0.3);
+        }
+        
+        .control-center {
+            border-color: #ff0040;
+            box-shadow: 0 0 25px rgba(255, 0, 64, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .equipment-bay {
+            border-color: #ffff00;
+            box-shadow: 0 0 25px rgba(255, 255, 0, 0.3);
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .patient-chamber .section-title { color: #ff6600; text-shadow: 0 0 10px #ff6600; }
+        .control-center .section-title { color: #ff0040; text-shadow: 0 0 10px #ff0040; }
+        .equipment-bay .section-title { color: #ffff00; text-shadow: 0 0 10px #ffff00; }
+        
+        .pixel-avatar {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border: 3px solid #ff0040;
+            border-radius: 8px;
+            background: #1a1a1a;
+            position: relative;
+            overflow: hidden;
+            image-rendering: pixelated;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pixel-avatar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 0, 64, 0.1) 2px,
+                rgba(255, 0, 64, 0.1) 4px
+            );
+            animation: scanLines 2s linear infinite;
+        }
+        
+        @keyframes scanLines {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        .patient-data {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #ff6600;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .data-field {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.2);
+        }
+        
+        .field-label {
+            color: #ff6600;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+        
+        .field-value {
+            color: #ffffff;
+            font-weight: 400;
+        }
+        
+        .symptoms-display {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0040;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .symptom-entry {
+            background: rgba(0, 0, 0, 0.6);
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #ff0040;
+            font-size: 0.9em;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        
+        .symptom-entry:hover {
+            background: rgba(255, 0, 64, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .diagnosis-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .action-btn {
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .action-btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-clear {
+            background: linear-gradient(135deg, #00ff41, #00cc33);
+            color: #000000;
+            border: 2px solid #00ff41;
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.4);
+        }
+        
+        .btn-quarantine {
+            background: linear-gradient(135deg, #ff0040, #cc0033);
+            color: #ffffff;
+            border: 2px solid #ff0040;
+            box-shadow: 0 5px 15px rgba(255, 0, 64, 0.4);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+        }
+        
+        .scanner-display {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid #00ffff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .scan-header {
+            color: #00ffff;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+        
+        .scan-result {
+            color: #ffffff;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+        
+        .next-cycle-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #00ffff, #0080ff);
+            color: #000000;
+            padding: 15px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .equipment-item {
+            background: rgba(255, 255, 0, 0.08);
+            border: 1px solid #ffff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .equipment-item:hover {
+            background: rgba(255, 255, 0, 0.15);
+            transform: scale(1.02);
+        }
+        
+        .equipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .equipment-name {
+            color: #ffff00;
+            font-weight: 700;
+            font-size: 0.95em;
+        }
+        
+        .equipment-desc {
+            color: #cccccc;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+        
+        .purchase-btn {
+            background: linear-gradient(135deg, #ffff00, #ff8800);
+            color: #000000;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85em;
+        }
+        
+        .purchase-btn:disabled {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+        
+        .time-cycle {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+            z-index: 100;
+        }
+        
+        .cycle-label {
+            font-size: 0.3em;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid;
+            border-radius: 15px;
+            padding: 30px;
+            font-size: 1.4em;
+            font-weight: 700;
+            text-align: center;
+            z-index: 1000;
+            min-width: 350px;
+            display: none;
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification.success {
+            border-color: #00ff41;
+            color: #00ff41;
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.6);
+        }
+        
+        .notification.failure {
+            border-color: #ff0040;
+            color: #ff0040;
+            box-shadow: 0 0 40px rgba(255, 0, 64, 0.6);
+        }
+
+        @media (max-width: 1200px) {
+            .main-gameplay {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+            
+            .stats-hud {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .diagnosis-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .time-cycle {
+                width: 70px;
+                height: 70px;
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header class="header">
+            <h1 class="game-title">PLAGUE DOCTOR 2066</h1>
+            <div class="subtitle">◤ CYBERPUNK MEDICAL HORROR EXPERIENCE ◥</div>
+        </header>
+
+        <div class="stats-hud">
+            <div class="stat-display">
+                <div class="stat-label">Neural Credits</div>
+                <div class="stat-value" id="credits">500</div>
+            </div>
+            <div class="stat-display">
+                <div class="stat-label">Scan Accuracy</div>
+                <div class="stat-value" id="accuracy">75%</div>
+            </div>
+            <div class="stat-display">
+                <div class="stat-label">Doctor Level</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+            <div class="stat-display">
+                <div class="stat-label">Cases Processed</div>
+                <div class="stat-value" id="cases">0</div>
+            </div>
+            <div class="stat-display">
+                <div class="stat-label">Cycle Day</div>
+                <div class="stat-value" id="day">1</div>
+            </div>
+        </div>
+
+        <div class="main-gameplay">
+            <div class="patient-chamber">
+                <div class="section-title">◤ PATIENT CONTAINMENT ◥</div>
+                
+                <div class="pixel-avatar" id="patient-avatar">
+                    <!-- Pixel art character will be generated here -->
+                </div>
+
+                <div class="patient-data" id="patient-info">
+                    <!-- Patient information will be populated here -->
+                </div>
+
+                <div class="symptoms-display">
+                    <div class="scan-header">◤ Bio-Signature Analysis ◥</div>
+                    <div id="symptoms-data">
+                        <!-- Symptoms will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-center">
+                <div class="section-title">◤ DIAGNOSIS MATRIX ◥</div>
+                
+                <div class="diagnosis-controls">
+                    <button class="action-btn btn-clear" onclick="makeDecision(false)">
+                        ◤ CLEAR ◥
+                    </button>
+                    <button class="action-btn btn-quarantine" onclick="makeDecision(true)">
+                        ◤ QUARANTINE ◥
+                    </button>
+                </div>
+
+                <div class="scanner-display">
+                    <div class="scan-header">◤ Medical AI Scanner ◥</div>
+                    <div class="scan-result" id="scanner-output">
+                        Neural network initializing...<br>
+                        Awaiting patient data input...
+                    </div>
+                </div>
+
+                <button class="next-cycle-btn" onclick="loadNextPatient()" id="next-patient">
+                    ◤ NEXT SUBJECT ◥
+                </button>
+            </div>
+
+            <div class="equipment-bay">
+                <div class="section-title">◤ EQUIPMENT MATRIX ◥</div>
+                
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <div class="equipment-name">◤ Neural Scanner MK-II ◥</div>
+                        <button class="purchase-btn" onclick="purchaseUpgrade('scanner')" id="scanner-buy">
+                            Buy 200₢
+                        </button>
+                    </div>
+                    <div class="equipment-desc">Enhanced bio-signature detection (+10% Accuracy)</div>
+                </div>
+
+                <div class="equipment-item">
+                    <div class="equipment-header">
+                        <div class="equipment-name">◤ Quantum AI Core ◥</div>
+                        <button class="purchase-btn" onclick="purchaseUpgrade('ai')" id="ai-buy">
+                            Buy 500₢
+                        </button>
+                    </div>
+                    <div class="equipment-desc">Advanced pattern recognition (+15% Accuracy)</div>
+                </div>
+
+      <div class="equipment-item">
+<div class="equipment-header">
+<div class="equipment-name">◤ Dimensional Analyzer ◥</div>
+<button class="purchase-btn" onclick="purchaseUpgrade('quantum')" id="quantum-buy">
+Buy 1000₢
+</button>
+</div>
+<div class="equipment-desc">Molecular-level pathogen detection (+20% Accuracy)</div>
+</div>
+</div>
+</div>
+
+<div class="time-cycle" id="time-display">
+<div class="cycle-label">Cycle</div>
+<div>☀</div>
+</div>
+
+<div class="notification" id="notification">
+<!-- Game feedback will appear here -->
+</div>
+</div>
+
+<script>
+// Game state
+let gameState = {
+credits: 500,
+accuracy: 75,
+level: 1,
+casesProcessed: 0,
+day: 1,
+isNight: false,
+upgrades: {
+scanner: false,
+ai: false,
+quantum: false
+},
+currentPatient: null,
+diagnosisMade: false
+};
+
+// Patient data generators
+const firstNames = ['Zara', 'Kai', 'Neo', 'Luna', 'Orion', 'Nova', 'Aria', 'Rex', 'Zoe', 'Axel', 'Vera', 'Dex', 'Iris', 'Jax', 'Nyx'];
+const lastNames = ['Vex', 'Core', 'Prime', 'Nexus', 'Flux', 'Code', 'Link', 'Sync', 'Grid', 'Edge', 'Byte', 'Node', 'Tech', 'Nano', 'Zero'];
+
+const healthySymptoms = [
+'◤ Normal bio-temperature (36.5°C) ◥',
+'◤ Clear respiratory patterns ◥',
+'◤ Stable neural activity ◥',
+'◤ Normal blood circulation ◥',
+'◤ Healthy cellular regeneration ◥',
+'◤ Good reflex responses ◥',
+'◤ Normal metabolic function ◥'
+];
+
+const infectedSymptoms = [
+'◤ Elevated bio-temp (40.2°C) ◥',
+'◤ Irregular breathing detected ◥',
+'◤ Neural pathway corruption ◥',
+'◤ Abnormal cellular mutations ◥',
+'◤ Viral protein synthesis ◥',
+'◤ Immune system failure ◥',
+'◤ Unknown pathogen markers ◥',
+'◤ Genetic code alteration ◥',
+'◤ Memory core fragmentation ◥',
+'◤ Aggressive behavior patterns ◥',
+'◤ Cellular necrosis detected ◥',
+'◤ Toxin accumulation present ◥'
+];
+
+const rareSymptoms = [
+'◤ Quantum DNA resonance ◥',
+'◤ Temporal displacement effects ◥',
+'◤ Cybernetic integration failure ◥',
+'◤ Enhanced neural connectivity ◥',
+'◤ Dimensional phase anomaly ◥',
+'◤ Bio-mechanical rejection ◥'
+];
+
+// Pixel art character generator
+function generatePixelArt(patientData) {
+const canvas = document.createElement('canvas');
+canvas.width = 120;
+canvas.height = 120;
+const ctx = canvas.getContext('2d');
+
+// Disable anti-aliasing for crisp pixels
+ctx.imageSmoothingEnabled = false;
+
+// Background
+ctx.fillStyle = '#1a1a1a';
+ctx.fillRect(0, 0, 120, 120);
+
+// Create simple pixel art character
+const colors = {
+skin: patientData.isInfected ? '#ff6b6b' : '#ffd93d',
+hair: ['#654321', '#000000', '#8b4513', '#daa520', '#ff4500'][Math.floor(Math.random() * 5)],
+eyes: patientData.isInfected ? '#ff0000' : '#00ff00',
+clothing: ['#4169e1', '#32cd32', '#ff6347', '#9370db', '#20b2aa'][Math.floor(Math.random() * 5)]
+};
+
+// Head
+ctx.fillStyle = colors.skin;
+ctx.fillRect(40, 30, 40, 40);
+
+// Hair
+ctx.fillStyle = colors.hair;
+ctx.fillRect(35, 25, 50, 20);
+
+// Eyes
+ctx.fillStyle = colors.eyes;
+ctx.fillRect(45, 40, 5, 5);
+ctx.fillRect(65, 40, 5, 5);
+
+// Mouth
+ctx.fillStyle = patientData.isInfected ? '#ff0000' : '#000000';
+ctx.fillRect(55, 55, 10, 3);
+
+// Body
+ctx.fillStyle = colors.clothing;
+ctx.fillRect(35, 70, 50, 45);
+
+// Arms
+ctx.fillRect(20, 75, 15, 35);
+ctx.fillRect(85, 75, 15, 35);
+
+// Infection indicators
+if (patientData.isInfected) {
+ctx.fillStyle = '#ff0000';
+// Add random red pixels for infection
+for (let i = 0; i < 8; i++) {
+const x = Math.floor(Math.random() * 40) + 40;
+const y = Math.floor(Math.random() * 40) + 30;
+ctx.fillRect(x, y, 2, 2);
+}
+}
+return canvas;
+}
+
+function generatePatientID() {
+return 'CY-' + Math.floor(Math.random() * 9000 + 1000) + '-' + Math.floor(Math.random() * 90 + 10);
+}
+
+function generatePatient() {
+const isInfected = Math.random() < 0.4;
+const isRealPerson = Math.random() < 0.9;
+
+const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+const age = Math.floor(Math.random() * 60 + 18);
+const id = generatePatientID();
+
+let symptoms = [];
+if (isInfected) {
+const numSymptoms = Math.floor(Math.random() * 3 + 2);
+const availableSymptoms = [...infectedSymptoms];
+
+if (gameState.level > 2 && Math.random() < 0.3) {
+availableSymptoms.push(...rareSymptoms);
+}
+
+for (let i = 0; i < numSymptoms; i++) {
+const symptomIndex = Math.floor(Math.random() * availableSymptoms.length);
+symptoms.push(availableSymptoms.splice(symptomIndex, 1)[0]);
+}
+} else {
+const numSymptoms = Math.floor(Math.random() * 3 + 1);
+const availableSymptoms = [...healthySymptoms];
+
+for (let i = 0; i < numSymptoms; i++) {
+const symptomIndex = Math.floor(Math.random() * availableSymptoms.length);
+symptoms.push(availableSymptoms.splice(symptomIndex, 1)[0]);
+}
+}
+
+let suspiciousMarkers = [];
+if (!isRealPerson) {
+if (Math.random() < 0.5) suspiciousMarkers.push('ID format anomaly');
+if (Math.random() < 0.3) suspiciousMarkers.push('Age verification failed');
+if (Math.random() < 0.4) suspiciousMarkers.push('Biometric mismatch');
+}
+
+return {
+firstName,
+lastName,
+age,
+id,
+isInfected,
+isRealPerson,
+symptoms,
+suspiciousMarkers
+};
+}
+
+function displayPatient(patient) {
+// Generate and display pixel art
+const avatar = document.getElementById('patient-avatar');
+avatar.innerHTML = '';
+const pixelCanvas = generatePixelArt(patient);
+avatar.appendChild(pixelCanvas);
+
+// Display patient info
+const info = document.getElementById('patient-info');
+info.innerHTML = `
+<div class="data-field">
+<span class="field-label">Subject Name:</span>
+<span class="field-value">${patient.firstName} ${patient.lastName}</span>
+</div>
+<div class="data-field">
+<span class="field-label">Age Unit:</span>
+<span class="field-value">${patient.age} cycles</span>
+</div>
+<div class="data-field">
+<span class="field-label">Neural ID:</span>
+<span class="field-value">${patient.id}</span>
+</div>
+<div class="data-field">
+<span class="field-label">Auth Status:</span>
+<span class="field-value" style="color: ${patient.isRealPerson ? '#00ff41' : '#ff0040'}">
+${patient.isRealPerson ? '◤ VERIFIED ◥' : '◤ SUSPICIOUS ◥'}
+</span>
+</div>
+${patient.suspiciousMarkers.length > 0 ? `
+<div class="data-field">
+<span class="field-label">Alerts:</span>
+<span class="field-value" style="color: #ff0040">${patient.suspiciousMarkers.join(', ')}</span>
+</div>
+` : ''}
+`;
+
+// Display symptoms
+const symptomsData = document.getElementById('symptoms-data');
+symptomsData.innerHTML = patient.symptoms.map(symptom =>
+`<div class="symptom-entry">${symptom}</div>`
+).join('');
+
+// Update scanner output
+const scanner = document.getElementById('scanner-output');
+const accuracy = gameState.accuracy / 100;
+const correctReading = Math.random() < accuracy;
+
+if (correctReading) {
+scanner.innerHTML = `
+◤ Neural scan complete ◥<br>
+Confidence: ${Math.floor(accuracy * 100)}%<br>
+Pathogen status: ${patient.isInfected ? '◤ INFECTED ◥' : '◤ CLEAN ◥'}
+`;
+} else {
+scanner.innerHTML = `
+◤ Scan interference detected ◥<br>
+Confidence: ${Math.floor(accuracy * 50)}%<br>
+Manual diagnosis required
+`;
+}
+}
+
+function makeDecision(quarantine) {
+if (gameState.diagnosisMade) return;
+
+const patient = gameState.currentPatient;
+const correct = (quarantine === patient.isInfected) && patient.isRealPerson;
+
+gameState.diagnosisMade = true;
+gameState.casesProcessed++;
+
+let reward = 0;
+let message = '';
+
+if (!patient.isRealPerson) {
+if (quarantine) {
+reward = 75;
+message = '◤ THREAT NEUTRALIZED ◥\nFake subject quarantined';
+} else {
+reward = 25;
+message = '◤ PARTIAL SUCCESS ◥\nFake detected but released';
+}
+} else if (correct) {
+reward = 150;
+message = '◤ PERFECT DIAGNOSIS ◥\nSubject processed correctly';
+} else {
+reward = -75;
+message = '◤ CRITICAL ERROR ◥\nCredits deducted for malpractice';
+}
+
+gameState.credits += reward;
+
+// Show notification
+const notification = document.getElementById('notification');
+notification.className = `notification ${correct || !patient.isRealPerson ? 'success' : 'failure'}`;
+notification.innerHTML = `
+${message}<br>
+<small>Credits: ${reward > 0 ? '+' : ''}${reward}₢</small>
+`;
+notification.style.display = 'block';
+
+setTimeout(() => {
+notification.style.display = 'none';
+}, 3000);
+
+document.getElementById('next-patient').style.display = 'block';
+
+if (gameState.casesProcessed % 5 === 0) {
+gameState.level++;
+if (correct || !patient.isRealPerson) {
+gameState.accuracy = Math.min(95, gameState.accuracy + 2);
+}
+}
+
+updateGameUI();
+}
+
+function loadNextPatient() {
+gameState.currentPatient = generatePatient();
+gameState.diagnosisMade = false;
+displayPatient(gameState.currentPatient);
+document.getElementById('next-patient').style.display = 'none';
+
+if (gameState.casesProcessed % 8 === 0) {
+gameState.isNight = !gameState.isNight;
+if (!gameState.isNight) {
+gameState.day++;
+}
+updateTimeDisplay();
+}
+}
+
+function purchaseUpgrade(type) {
+const costs = { scanner: 200, ai: 500, quantum: 1000 };
+const accuracyBonus = { scanner: 10, ai: 15, quantum: 20 };
+
+if (gameState.credits >= costs[type] && !gameState.upgrades[type]) {
+gameState.credits -= costs[type];
+gameState.upgrades[type] = true;
+gameState.accuracy += accuracyBonus[type];
+
+const btn = document.getElementById(`${type}-buy`);
+btn.disabled = true;
+btn.textContent = '◤ OWNED ◥';
+
+updateGameUI();
+}
+}
+
+function updateGameUI() {
+document.getElementById('credits').textContent = gameState.credits + '₢';
+document.getElementById('accuracy').textContent = gameState.accuracy + '%';
+document.getElementById('level').textContent = gameState.level;
+document.getElementById('cases').textContent = gameState.casesProcessed;
+document.getElementById('day').textContent = gameState.day;
+
+// Update purchase buttons
+Object.keys(gameState.upgrades).forEach(upgrade => {
+const btn = document.getElementById(`${upgrade}-buy`);
+const costs = { scanner: 200, ai: 500, quantum: 1000 };
+
+if (gameState.upgrades[upgrade]) {
+btn.disabled = true;
+btn.textContent = '◤ OWNED ◥';
+} else if (gameState.credits < costs[upgrade]) {
+btn.disabled = true;
+} else {
+btn.disabled = false;
+}
+});
+}
+
+function updateTimeDisplay() {
+const timeDisplay = document.getElementById('time-display');
+timeDisplay.innerHTML = `
+<div class="cycle-label">Cycle</div>
+<div>${gameState.isNight ? '🌙' : '☀'}</div>
+`;
+
+// Update background for night/day
+const body = document.body;
+if (gameState.isNight) {
+body.style.background = `
+radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%),
+radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
+linear-gradient(135deg, #000000 0%, #0a0a1e 25%, #0e1325 50%, #050a0f 100%)
+`;
+} else {
+body.style.background = `
+radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%),
+linear-gradient(135deg, #0f0f0f 0%, #1a0a2e 25%, #16213e 50%, #0f1419 100%)
+`;
+}
+}
+
+// Initialize game
+function initializeGame() {
+gameState.currentPatient = generatePatient();
+displayPatient(gameState.currentPatient);
+updateGameUI();
+updateTimeDisplay();
+}
+
+// Start the game
+initializeGame();
+</script>
+</body>
+</html>
